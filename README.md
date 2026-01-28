@@ -21,6 +21,19 @@ C:/Users/raish/Desktop/assigment-HU/.venv/Scripts/python.exe -m uvicorn app.main
 Open Swagger UI:
 - http://127.0.0.1:8000/docs
 
+## Milestone 2 (Research)
+
+Set `TAVILY_API_KEY` in `.env`.
+
+Backlog run now triggers research in the background:
+- `POST /projects/{project_id}/runs/backlog`
+
+Poll progress events:
+- `GET /runs/{run_id}/events`
+
+View the persisted Research Appendix artifact:
+- `GET /runs/{run_id}/research`
+
 ## Environment
 
 Copy `.env.example` to `.env` and adjust as needed.

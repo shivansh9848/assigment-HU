@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     seed_admin_email: str | None = Field(default=None, validation_alias="SEED_ADMIN_EMAIL")
     seed_admin_password: str | None = Field(default=None, validation_alias="SEED_ADMIN_PASSWORD")
 
+    # Milestone 2: Web research
+    tavily_api_key: str | None = Field(default=None, validation_alias="TAVILY_API_KEY")
+    research_max_results: int = Field(default=8, validation_alias="RESEARCH_MAX_RESULTS")
+    research_search_depth: str = Field(default="basic", validation_alias="RESEARCH_SEARCH_DEPTH")
+
 
 @lru_cache
 def get_settings() -> Settings:

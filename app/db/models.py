@@ -72,3 +72,34 @@ class Run(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     project: Mapped[Project] = relationship(back_populates="runs")
+
+
+class RunEventLevel(str, enum.Enum):
+    info = "info"
+    warning = "warning"
+    error = "error"
+
+
+class RunEvent(Base):
+    __tablename__ = "run_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    run_id: Mapped[str] = mapped_column(String(36), ForeignKey("runs.id"), index=True)
+    level: Mapped[RunEventLevel] = mapped_column(Enum(RunEventLevel), default=RunEventLevel.info)
+    event_type: Mapped[str] = mapped_column(String(80))
+    message: Mapped[str] = mapped_column(Text)
+    payload_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ResearchAppendix(Base):
+    __tablename__ = "research_appendices"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), index=True)
+    run_id: Mapped[str] = mapped_column(String(36), ForeignKey("runs.id"), index=True, unique=True)
+    markdown_path: Mapped[str] = mapped_column(String(500))
+    urls_json: Mapped[str] = mapped_column(Text)
+    summary: Mapped[str] = mapped_column(Text)
+    impact: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
