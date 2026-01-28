@@ -1,0 +1,20 @@
+Product Request: “Campus Event Companion”
+
+Build a web backend (API-first) for a university campus event companion that helps students discover events, RSVP, and get reminders.
+
+Key outcomes:
+- Students can quickly find relevant events (by date, category, location).
+- Students can RSVP and view their upcoming schedule.
+- Organizers can create and manage events.
+
+Constraints:
+- MVP should be simple and reliable; prioritize core flows over fancy features.
+- Must be secure (auth, authorization) and handle invalid input gracefully.
+- Should support both “student” and “organizer” roles.
+
+Nice-to-have:
+- Basic analytics for organizers (views/RSVP count).
+- Calendar export (ICS).
+
+Primary user flow:
+Signup/Login → Browse events → View event details → RSVP → Receive reminders → Manage RSVP list

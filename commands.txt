@@ -1,0 +1,16 @@
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+If you set DATABASE_URL to Postgres (e.g. postgresql+psycopg://user:pass@host:5432/dbname), you must also:
+.\.venv\scripts\activate
+Install a Postgres driver:
+Recommended: psycopg[binary] (psycopg3)
+Alternative: psycopg2-binary
+Make sure Postgres is running and the DB exists (and credentials are correct).
+Use the right URL scheme for the driver you install:
+psycopg3: postgresql+psycopg://...
+psycopg2: postgresql+psycopg2://...
+
+{
+  "product_request": "Build a simple todo app with login and projects"
+}
+{ "product_request": "Simple Todo List API: auth required; todo CRUD; mark done/undone; filter by status; validate input; only access own todos." }

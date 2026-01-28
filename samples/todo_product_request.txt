@@ -1,0 +1,17 @@
+Product Request: “Simple Todo List API”
+
+Build a simple backend API for a personal todo list.
+
+User goals:
+- Create, view, update, and delete todo items.
+- Mark todos as completed.
+- Filter todos by status (completed / not completed).
+
+Constraints:
+- Keep it minimal: one user account per person (auth required).
+- Data must be persisted.
+- Must validate input and return friendly errors.
+
+Nice-to-have:
+- Due date and priority.
+- Basic search by title.
