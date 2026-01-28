@@ -103,3 +103,47 @@ class ResearchAppendix(Base):
     summary: Mapped[str] = mapped_column(Text)
     impact: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class EpicBatchStatus(str, enum.Enum):
+    generated = "generated"
+    approved = "approved"
+
+
+class EpicStatus(str, enum.Enum):
+    proposed = "proposed"
+    approved = "approved"
+    rejected = "rejected"
+
+
+class EpicBatch(Base):
+    __tablename__ = "epic_batches"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), index=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("runs.id"), index=True, nullable=True)
+    constraints: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[EpicBatchStatus] = mapped_column(Enum(EpicBatchStatus), default=EpicBatchStatus.generated)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Epic(Base):
+    __tablename__ = "epics"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), index=True)
+    batch_id: Mapped[str] = mapped_column(String(36), ForeignKey("epic_batches.id"), index=True)
+
+    title: Mapped[str] = mapped_column(String(200))
+    goal: Mapped[str] = mapped_column(Text)
+    in_scope: Mapped[str] = mapped_column(Text)
+    out_of_scope: Mapped[str] = mapped_column(Text)
+    priority: Mapped[str] = mapped_column(String(10))
+    priority_reason: Mapped[str] = mapped_column(Text)
+    dependencies_json: Mapped[str] = mapped_column(Text, default="[]")
+    risks: Mapped[str] = mapped_column(Text)
+    assumptions: Mapped[str] = mapped_column(Text)
+    open_questions: Mapped[str] = mapped_column(Text)
+    success_metrics: Mapped[str] = mapped_column(Text)
+    status: Mapped[EpicStatus] = mapped_column(Enum(EpicStatus), default=EpicStatus.proposed)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

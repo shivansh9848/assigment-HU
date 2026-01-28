@@ -34,6 +34,22 @@ Poll progress events:
 View the persisted Research Appendix artifact:
 - `GET /runs/{run_id}/research`
 
+## Milestone 3 (Epic Generation)
+
+Pre-req: Run Milestone 2 once so a Research Appendix exists for the project.
+
+Generate epics (defaults to 6) with optional constraints:
+- `POST /projects/{project_id}/epics/generate`
+	- body example: `{ "constraints": "must support SSO" }`
+
+Get latest epic batch:
+- `GET /projects/{project_id}/epics`
+
+Approve a generated epic batch (demo scenario):
+- `POST /projects/{project_id}/epics/{batch_id}/approve`
+
+Mermaid dependency graph is returned in the response as `mermaid` and also saved under the project run folder.
+
 ## Environment
 
 Copy `.env.example` to `.env` and adjust as needed.

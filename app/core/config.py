@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     research_max_results: int = Field(default=8, validation_alias="RESEARCH_MAX_RESULTS")
     research_search_depth: str = Field(default="basic", validation_alias="RESEARCH_SEARCH_DEPTH")
 
+    # Milestone 3+: LLM (optional; falls back to deterministic generation if unset)
+    openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
+    openai_model: str = Field(default="gpt-4o-mini", validation_alias="OPENAI_MODEL")
+
 
 @lru_cache
 def get_settings() -> Settings:

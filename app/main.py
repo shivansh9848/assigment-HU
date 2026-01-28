@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routers import auth, projects, runs
 from app.api.routers import run_events
+from app.api.routers import epics
 from app.core.config import get_settings
 from app.db.base import Base
 from app.db.session import engine
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
     app.include_router(projects.router, prefix=settings.api_v1_prefix)
     app.include_router(runs.router, prefix=settings.api_v1_prefix)
     app.include_router(run_events.router, prefix=settings.api_v1_prefix)
+    app.include_router(epics.router, prefix=settings.api_v1_prefix)
 
     @app.get("/health")
     def health():
