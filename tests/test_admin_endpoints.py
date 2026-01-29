@@ -18,8 +18,8 @@ def test_admin_list_and_promote_demote_delete(client: TestClient) -> None:
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
     # Create two normal users
-    _signup(client, "a@example.com", "pass")
-    _signup(client, "b@example.com", "pass")
+    _signup(client, "a@example.com", "password123")
+    _signup(client, "b@example.com", "password123")
 
     # List users (admin only)
     res = client.get("/admin/users", headers=admin_headers)
@@ -34,7 +34,7 @@ def test_admin_list_and_promote_demote_delete(client: TestClient) -> None:
     assert res.json()["is_admin"] is True
 
     # Non-admin cannot list users
-    user_token = _login(client, "b@example.com", "pass")
+    user_token = _login(client, "b@example.com", "password123")
     user_headers = {"Authorization": f"Bearer {user_token}"}
     res = client.get("/admin/users", headers=user_headers)
     assert res.status_code == 403
