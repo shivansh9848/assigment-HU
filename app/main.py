@@ -1,11 +1,10 @@
+
 from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routers import auth, projects, runs
-from app.api.routers import run_events
-from app.api.routers import epics
+from app.api.routers import auth, projects, runs, run_events, epics, ws ,stories,admin
 from app.core.config import get_settings
 from app.db.base import Base
 from app.db.session import engine
@@ -30,10 +29,14 @@ def create_app() -> FastAPI:
         seed_admin_if_configured()
 
     app.include_router(auth.router, prefix=settings.api_v1_prefix)
+    app.include_router(admin.router, prefix=settings.api_v1_prefix) 
     app.include_router(projects.router, prefix=settings.api_v1_prefix)
     app.include_router(runs.router, prefix=settings.api_v1_prefix)
     app.include_router(run_events.router, prefix=settings.api_v1_prefix)
     app.include_router(epics.router, prefix=settings.api_v1_prefix)
+    app.include_router(ws.router, prefix=settings.api_v1_prefix)
+    app.include_router(stories.router, prefix=settings.api_v1_prefix)
+
 
     @app.get("/health")
     def health():

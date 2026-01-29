@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-import enum
-import uuid
 from datetime import datetime
+import enum
+import json
+import uuid
+from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func, Column
+from sqlalchemy import (
+    Column, String, Text, DateTime, Enum, Integer, ForeignKey, Index
+)
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.db.base import Base
-
-
+from sqlalchemy.sql import func
+from app.db.base import Base  
 class UserRole(str, enum.Enum):
     user = "user"
     admin = "admin"
@@ -114,6 +116,7 @@ class EpicStatus(str, enum.Enum):
     proposed = "proposed"
     approved = "approved"
     rejected = "rejected"
+    changes_requested = "changes_requested"  # NEW
 
 
 class EpicBatch(Base):
@@ -147,3 +150,95 @@ class Epic(Base):
     success_metrics: Mapped[str] = mapped_column(Text)
     status: Mapped[EpicStatus] = mapped_column(Enum(EpicStatus), default=EpicStatus.proposed)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class StoryBatchStatus(str, enum.Enum):
+    generated = "generated"
+    approved = "approved"
+
+
+class StoryStatus(str, enum.Enum):
+    proposed = "proposed"
+    approved = "approved"
+    rejected = "rejected"
+    changes_requested = "changes_requested"
+
+
+class StoryBatch(Base):
+    __tablename__ = "story_batches"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), index=True)
+    epic_id: Mapped[str] = mapped_column(String(36), ForeignKey("epics.id"), index=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("runs.id"), index=True, nullable=True)
+    constraints: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[StoryBatchStatus] = mapped_column(Enum(StoryBatchStatus), default=StoryBatchStatus.generated)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Story(Base):
+    __tablename__ = "stories"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), index=True)
+    epic_id: Mapped[str] = mapped_column(String(36), ForeignKey("epics.id"), index=True)
+    batch_id: Mapped[str] = mapped_column(String(36), ForeignKey("story_batches.id"), index=True)
+
+    # Required fields from Milestone 4 brief:
+    # - user story statement, acceptance criteria, edge cases, NFRs, estimate, dependencies
+    statement: Mapped[str] = mapped_column(Text)  # “As a <role>, I want <need>, so that <benefit>”
+    acceptance_criteria_json: Mapped[str] = mapped_column(Text, default="[]")  # list[str] (Given/When/Then)
+    edge_cases: Mapped[str] = mapped_column(Text, default="")
+    non_functional: Mapped[str] = mapped_column(Text, default="")  # performance/security/privacy if relevant
+    estimate: Mapped[str] = mapped_column(String(50), default="M")  # t-shirt size by default
+    estimate_reason: Mapped[str] = mapped_column(Text, default="")
+    dependencies_json: Mapped[str] = mapped_column(Text, default="[]")  # list[str]
+    status: Mapped[StoryStatus] = mapped_column(Enum(StoryStatus), default=StoryStatus.proposed)
+    feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+
+
+class SpecStatus(str, enum.Enum):
+    proposed = "proposed"
+    approved = "approved"
+    rejected = "rejected"
+
+
+class SpecDocument(Base):
+    __tablename__ = "spec_documents"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("projects.id"), nullable=False, index=True)
+    story_id = Column(String, ForeignKey("stories.id"), nullable=False, index=True)
+    version = Column(Integer, nullable=False, default=1)
+
+    # Inputs / governance
+    constraints = Column(Text, nullable=True)
+    feedback = Column(Text, nullable=True)
+    status = Column(Enum(SpecStatus), nullable=False, default=SpecStatus.proposed)
+
+    # Spec content
+    overview = Column(Text, nullable=True)
+    goals = Column(Text, nullable=True)
+    functional_requirements_json = Column(Text, nullable=True)
+    api_contracts_json = Column(Text, nullable=True)
+    data_model_changes_json = Column(Text, nullable=True)
+    security_considerations = Column(Text, nullable=True)
+    error_handling = Column(Text, nullable=True)
+    observability = Column(Text, nullable=True)
+    test_plan_json = Column(Text, nullable=True)
+    implementation_plan_json = Column(Text, nullable=True)
+
+    # Mermaid diagrams
+    mermaid_sequence = Column(Text, nullable=True)
+    mermaid_er = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    project = relationship("Project", lazy="joined")
+    story = relationship("Story", lazy="joined")
+
+Index("ix_spec_documents_story_version", SpecDocument.story_id, SpecDocument.version, unique=True)

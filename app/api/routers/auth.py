@@ -21,7 +21,7 @@ def signup(payload: UserCreate, db: Session = Depends(get_db)) -> UserResponse:
     if not email:
         raise bad_request("Email is required")
     if not payload.password or len(payload.password) < 8:
-        raise bad_request("Password must be at least 8 characters")
+        raise bad_request("Password must be at least 4 characters")
 
     existing = db.query(User).filter(User.email == email).one_or_none()
     if existing:

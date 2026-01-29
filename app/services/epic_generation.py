@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any
-
+from typing import Any, List
 import httpx
-
+from openai import OpenAI
 from app.core.config import get_settings
 
 
@@ -61,6 +60,101 @@ def _heuristic_epics(*, product_request: str, constraints: str, count: int) -> l
             )
         )
     return epics
+
+def _openai_generate_epics(
+    *,
+    product_request: str,
+    research_summary: str,
+    citations: list[str],
+    constraints: str,
+    count: int,
+) -> list[GeneratedEpic]:
+    settings = get_settings()
+    if not settings.openai_api_key:
+        return _heuristic_epics(product_request=product_request, constraints=constraints, count=count)
+
+    client = OpenAI(api_key=settings.openai_api_key)
+
+    system = (
+        "You are a product planning assistant. "
+        "Generate a prioritized epic backlog grounded in the provided research. "
+        "Return STRICT JSON ONLY using the schema: "
+        "{ \"epics\": [ {"
+        "\"title\": str, \"goal\": str, \"in_scope\": str, \"out_of_scope\": str, "
+        "\"priority\": str, \"priority_reason\": str, "
+        "\"dependencies\": [str], \"risks\": str, \"assumptions\": str, "
+        "\"open_questions\": str, \"success_metrics\": str } ] }"
+    )
+
+    user_payload = {
+        "product_request": product_request,
+        "research_summary": research_summary,
+        "citations": citations,
+        "constraints": constraints,
+        "count": count,
+        "notes": "Prioritize epics that unblock others. Use P0/P1/P2. Keep dependencies as titles of prerequisite epics.",
+    }
+
+    # Use Chat Completions for broad compatibility. If you prefer, move to Responses API.
+    resp = client.chat.completions.create(
+        model=settings.openai_model,
+        temperature=0.2,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+        ],
+    )
+
+    content = resp.choices[0].message.content or "{}"
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        # Defensive: fall back to heuristic to avoid breaking the flow
+        return _heuristic_epics(product_request=product_request, constraints=constraints, count=count)
+
+    items: List[dict[str, Any]] = list(data.get("epics") or [])
+    if not items:
+        return _heuristic_epics(product_request=product_request, constraints=constraints, count=count)
+
+    out: list[GeneratedEpic] = []
+    for e in items[: max(1, count)]:
+        out.append(
+            GeneratedEpic(
+                title=str(e.get("title", "")).strip(),
+                goal=str(e.get("goal", "")).strip(),
+                in_scope=str(e.get("in_scope", "")).strip(),
+                out_of_scope=str(e.get("out_of_scope", "")).strip(),
+                priority=str(e.get("priority", "P1")).strip(),
+                priority_reason=str(e.get("priority_reason", "")).strip(),
+                dependencies=[str(x).strip() for x in (e.get("dependencies") or [])],
+                risks=str(e.get("risks", "")).strip(),
+                assumptions=str(e.get("assumptions", "")).strip(),
+                open_questions=str(e.get("open_questions", "")).strip(),
+                success_metrics=str(e.get("success_metrics", "")).strip(),
+            )
+        )
+    return out
+
+
+def generate_epics(
+    *,
+    product_request: str,
+    research_summary: str,
+    citations: list[str],
+    constraints: str,
+    count: int,
+) -> list[GeneratedEpic]:
+    settings = get_settings()
+    if settings.openai_api_key:
+        return _openai_generate_epics(
+            product_request=product_request,
+            research_summary=research_summary,
+            citations=citations,
+            constraints=constraints,
+            count=count,
+        )
+    return _heuristic_epics(product_request=product_request, constraints=constraints, count=count)
 
 
 def _openai_generate_epics(*, product_request: str, research_summary: str, citations: list[str], constraints: str, count: int) -> list[GeneratedEpic]:
@@ -155,19 +249,28 @@ def generate_epics(*, product_request: str, research_summary: str, citations: li
     )
 
 
+
 def make_mermaid_dependency_graph(epics: list[GeneratedEpic]) -> str:
-    # Mermaid flowchart with dependencies by title.
-    lines = ["flowchart TD"]
+    # Emit a clean, Markdown-ready Mermaid graph.
+    lines: list[str] = []
+    lines.append("flowchart TD")
+    lines.append("")
+
     title_to_id: dict[str, str] = {}
     for idx, e in enumerate(epics, start=1):
         node_id = f"E{idx}"
         title_to_id[e.title] = node_id
-        safe = e.title.replace('"', "'")
-        lines.append(f"  {node_id}[\"{safe}\"]")
+        safe_title = e.title.replace('"', "'")
+        lines.append(f'  {node_id}["{safe_title}"]')
+
+    lines.append("")
 
     for e in epics:
-        for dep in e.dependencies:
-            if dep in title_to_id and e.title in title_to_id:
-                lines.append(f"  {title_to_id[dep]} --> {title_to_id[e.title]}")
+        src_id = title_to_id.get(e.title)
+        for dep_title in (e.dependencies or []):
+            dep_id = title_to_id.get(dep_title)
+            if dep_id and src_id:
+                lines.append(f"  {dep_id} --> {src_id}")
 
-    return "\n".join(lines) + "\n"
+    lines.append("")
+    return "\n".join(lines)
